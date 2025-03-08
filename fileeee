@@ -1,1 +1,27 @@
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+import grpc from 'k6/net/grpc';
+import { check, sleep } from 'k6';
+
+const client = new grpc.Client();
+client.load(['proto'], 'your_service.proto'); // Provide the correct proto file path
+
+export default function () {
+    client.connect('localhost:50051', {
+        plaintext: true, // Set to false if using TLS
+    });
+
+    const request = {
+        name: 'John Doe',  // Change according to your RPC request structure
+    };
+
+    const response = client.invoke('your.package.Service/Method', request);
+
+    check(response, {
+        'is status OK': (r) => r && r.status === grpc.StatusOK,
+        'has response': (r) => r && r.message && r.message.result !== undefined,
+    });
+
+    console.log(`Response: ${JSON.stringify(response.message)}`);
+
+    client.close();
+    sleep(1);
+}
